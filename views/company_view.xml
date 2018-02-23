@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+	<record id="smartcab_company_sms_scheduler" model="ir.ui.view">
+		<field name="name">smartcab.company.sms_scheduler.form</field>
+		<field name="model">res.company</field>
+		<field name="inherit_id" ref="smartcab.smartcab_company_form"/>
+		<field name="arch" type="xml">
+            <xpath expr="//field[@name='rcc']" position="after">
+                <field name="clickatell_key"/>
+            </xpath>
+		</field>
+	</record>
+</odoo>

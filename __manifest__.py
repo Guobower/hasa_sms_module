@@ -27,9 +27,9 @@
 ##############################################################################
 
 {
-    "name" : "SmartCab SMS Scheduler",
+    "name" : "Smartcab SMS Scheduler",
     "version" : "1.0",
-	"author" : "Anthony Ramirez, Hasa",
+	"author" : "Anthony Ramirez, Hasa Sàrl",
     "website" : "http://www.hasa.ch",
     "category" : "Generic Modules/Base",
     "description": """
@@ -39,7 +39,9 @@
     "init_xml" : [],
     "demo_xml" : [],
     "update_xml" : [
-		'sms_scheduler.xml',
+		'views/sms_scheduler.xml',
+		'views/company_view.xml',
+		'views/partner_view.xml',
 	],
 	'css' : [
 			],

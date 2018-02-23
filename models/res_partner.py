@@ -25,4 +25,9 @@
 # Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #
 ##############################################################################
-import models
+from odoo import fields, models, api
+
+class smartcab_partner_sms_scheduler(models.Model):
+    _inherit="res.partner"
+	
+    disable_sms = fields.Boolean("Désactiver SMS", default=True)

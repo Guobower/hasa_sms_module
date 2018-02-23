@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!--Scheduler sync Receive Request-->
+    <record id="smartcab_send_sms_scheduler" model="ir.cron">
+        <field name="name">Envoyer les SMS de rappel aux patients</field>
+        <field eval="True" name="active"/>
+        <field name="interval_number">1</field>
+        <field name="interval_type">days</field>
+        <field name="numbercall">-1</field>
+        <field name="nextcall">2018-02-23 11:00:00</field>
+        <field eval="'smartcab.sms.scheduler'" name="model"></field>
+        <field eval="'_send_sms'" name="function"/>
+        <field eval="''" name="args"/>
+    </record>
+</odoo>
