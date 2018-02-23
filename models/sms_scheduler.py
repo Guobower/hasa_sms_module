@@ -62,12 +62,9 @@ class smartcab_sms_scheduler(models.Model):
 			return '+' + tel_number[2:]
 		else:
 			_logger.error("Invalid patient number : {}".format(tel_number))
-			raise Exception("Invalid number")
 
 	@api.model
 	def _send_sms(self):
-		print("send sms")	#DEV
-		print(self)
 		now = datetime.now()
 		today = datetime.strptime(str(now.day) + '-' + str(now.month) + '-' + str(now.year), '%d-%m-%Y') + timedelta(days=1)
 		tomorrow = today.strftime('%Y-%m-%d %H:%M:%S')
@@ -77,7 +74,6 @@ class smartcab_sms_scheduler(models.Model):
 		calendar_event_obj = self.env['calendar.event']
 
 		company_id = self.env.user.company_id
-		print(company_id)
 
 		if not company_id.clickatell_key:
 			_logger.warning("There's no clickatell key for company {}".format(company_id.id))
@@ -91,16 +87,13 @@ class smartcab_sms_scheduler(models.Model):
 		}
 
 		meetings = calendar_event_obj.search([('start_datetime','>',tomorrow), ('start_datetime', '<', aftertomorrow)])
-		print(meetings)
 		for meeting in meetings:
-			print(meeting)
 			if meeting.partner_id.mobile and not meeting.partner_id.disable_sms:
 				tel = meeting.partner_id.mobile.replace(' ','')
 			
 				message = u'Bonjour, ceci est un message automatique pour vous rappeler que vous avez rendez-vous demain à ' + meeting.start_datetime[11:-3].replace(':', 'h') + ' avec M.' + meeting.praticien_id.name
 
-				#response = self._send_message(headers, message, self.parse_mobile_number(tel))
-				response = self._send_message(headers, message, tel)
+				response = self._send_message(headers, message, self.parse_mobile_number(tel))
 				
 				response_json = json.loads(response.text)
 
