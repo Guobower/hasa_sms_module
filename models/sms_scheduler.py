@@ -26,9 +26,9 @@
 #
 ##############################################################################
 from odoo import fields, models, api, exceptions
-from datetime import datetime
 import time
 from datetime import datetime, timedelta
+from dateutil import tz
 import logging
 import re
 import requests
@@ -42,18 +42,21 @@ clickatellapi_url = 'https://api.clickatell.com/rest/message'
 class smartcab_sms_scheduler(models.Model):
 	_name="smartcab.sms.scheduler"
 	
-	def _send_message(self, headers, text, to):
+	def _send_message(self, headers, text, to, sender_id):
 		values = {
+			"from": sender_id,
 			"text": text,
-			"to": [to]
+			"to": [to],
 		}
 		return requests.post(clickatellapi_url, 
 					json=values, 
 					headers=headers)
 
-	def parse_mobile_number(tel_number):
+	def parse_mobile_number(self,tel_number):
 		if re.match('^\+417[0-9]{8}$', tel_number) != None:
 			return tel_number
+		if re.match('^417[0-9]{8}$', tel_number) != None:
+			return '+' + tel_number
 		elif re.match('^07[0-9]{8}$', tel_number) != None:
 			return '+41' + tel_number[1:]
 		elif re.match('^7[0-9]{8}$', tel_number) != None:
@@ -62,6 +65,7 @@ class smartcab_sms_scheduler(models.Model):
 			return '+' + tel_number[2:]
 		else:
 			_logger.error("Invalid patient number : {}".format(tel_number))
+			raise Exception("Invalid number")
 
 	@api.model
 	def _send_sms(self):
@@ -72,9 +76,7 @@ class smartcab_sms_scheduler(models.Model):
 		aftertomorrow = today.strftime('%Y-%m-%d %H:%M:%S')
 
 		calendar_event_obj = self.env['calendar.event']
-
 		company_id = self.env.user.company_id
-
 		if not company_id.clickatell_key:
 			_logger.warning("There's no clickatell key for company {}".format(company_id.id))
 			return
@@ -85,16 +87,20 @@ class smartcab_sms_scheduler(models.Model):
 			"X-Version": "1",
 			"Accept": "application/json"
 		}
-
 		meetings = calendar_event_obj.search([('start_datetime','>',tomorrow), ('start_datetime', '<', aftertomorrow)])
 		for meeting in meetings:
 			if meeting.partner_id.mobile and not meeting.partner_id.disable_sms:
 				tel = meeting.partner_id.mobile.replace(' ','')
-			
-				message = u'Bonjour, ceci est un message automatique pour vous rappeler que vous avez rendez-vous demain à ' + meeting.start_datetime[11:-3].replace(':', 'h') + ' avec M.' + meeting.praticien_id.name
 
-				response = self._send_message(headers, message, self.parse_mobile_number(tel))
-				
+				from_zone = tz.tzutc()
+				to_zone = tz.gettz('Europe/Paris')
+				utc = datetime.strptime( meeting.start_datetime,'%Y-%m-%d %H:%M:%S').replace(tzinfo=from_zone)
+				central = utc.astimezone(to_zone)
+				time_rdv = central.strftime('%H:%M')
+				date_rdv = central.strftime('%d-%m-%Y')
+
+				message = u'Bonjour, ceci est un message automatique pour vous rappeler que vous avez rendez-vous demain à ' + time_rdv + ' avec ' + meeting.praticien_id.name
+				response = self._send_message(headers, message, self.parse_mobile_number(tel), "Smartcab")
 				response_json = json.loads(response.text)
 
 				if response.status_code != "200" and response_json["data"]["message"][0]["accepted"] == True:
