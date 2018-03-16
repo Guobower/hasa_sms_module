@@ -65,7 +65,7 @@ class smartcab_sms_scheduler(models.Model):
 			return '+' + tel_number[2:]
 		else:
 			_logger.error("Invalid patient number : {}".format(tel_number))
-			raise Exception("Invalid number")
+			return 'error '+ tel_number
 
 	@api.model
 	def _send_sms(self):
@@ -90,20 +90,24 @@ class smartcab_sms_scheduler(models.Model):
 		meetings = calendar_event_obj.search([('start_datetime','>',tomorrow), ('start_datetime', '<', aftertomorrow)])
 		for meeting in meetings:
 			if meeting.partner_id.mobile and not meeting.partner_id.disable_sms:
+
 				tel = meeting.partner_id.mobile.replace(' ','')
+				tel_number = self.parse_mobile_number(tel)
+				
+				if 'error' not in tel_number:
+					from_zone = tz.tzutc()
+					to_zone = tz.gettz('Europe/Paris')
+					utc = datetime.strptime( meeting.start_datetime,'%Y-%m-%d %H:%M:%S').replace(tzinfo=from_zone)
+					central = utc.astimezone(to_zone)
+					time_rdv = central.strftime('%H:%M')
+					date_rdv = central.strftime('%d-%m-%Y')
 
-				from_zone = tz.tzutc()
-				to_zone = tz.gettz('Europe/Paris')
-				utc = datetime.strptime( meeting.start_datetime,'%Y-%m-%d %H:%M:%S').replace(tzinfo=from_zone)
-				central = utc.astimezone(to_zone)
-				time_rdv = central.strftime('%H:%M')
-				date_rdv = central.strftime('%d-%m-%Y')
+					message = u'Bonjour, ceci est un message automatique pour vous rappeler que vous avez rendez-vous demain à ' + time_rdv + ' avec ' + meeting.praticien_id.name
+					
+					response = self._send_message(headers, message, tel_number, "Smartcab")
+					response_json = json.loads(response.text)
 
-				message = u'Bonjour, ceci est un message automatique pour vous rappeler que vous avez rendez-vous demain à ' + time_rdv + ' avec ' + meeting.praticien_id.name
-				response = self._send_message(headers, message, self.parse_mobile_number(tel), "Smartcab")
-				response_json = json.loads(response.text)
-
-				if response.status_code != "200" and response_json["data"]["message"][0]["accepted"] == True:
-					_logger.info(u'SMS envoyé à ' + meeting.partner_id.first_name + ' ' + meeting.partner_id.last_name + ' - Resultat : Erreur - ' + response.text)
-				else:
-					_logger.info(u'SMS envoyé à ' + meeting.partner_id.first_name + ' ' + meeting.partner_id.last_name + u' - Resultat : Succès')
+					if response.status_code != "200" and response_json["data"]["message"][0]["accepted"] == True:
+						_logger.info(u'SMS envoyé à ' + meeting.partner_id.first_name + ' ' + meeting.partner_id.last_name + ' - Resultat : Erreur - ' + response.text)
+					else:
+						_logger.info(u'SMS envoyé à ' + meeting.partner_id.first_name + ' ' + meeting.partner_id.last_name + u' - Resultat : Succès')
