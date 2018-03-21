@@ -102,8 +102,7 @@ class smartcab_sms_scheduler(models.Model):
 					time_rdv = central.strftime('%H:%M')
 					date_rdv = central.strftime('%d-%m-%Y')
 
-					message = u'Bonjour, ceci est un message automatique pour vous rappeler que vous avez rendez-vous demain à ' + time_rdv + ' avec ' + meeting.praticien_id.name
-					
+					message = u'Bonjour, vous avez rendez-vous avec votre ostéopathe '+ meeting.praticien_id.name+ 'le '+ date_rdv + ' à '+ time_rdv + ' .'+'Si vous ne pouvez pas venir, merci de nous avertir au ' + meeting.praticien_id.phone
 					response = self._send_message(headers, message, tel_number, "Smartcab")
 					response_json = json.loads(response.text)
 
